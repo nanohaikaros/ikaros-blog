@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<title>ikaros blog</title>
+</head>
+<body>
+
+<div id="topics">
+	<div class = "post">
+		<h1 class = "postTitle">
+			<a id="cb_post_title_url" class="postTitle2" href="http://www.cnblogs.com/sbaicl/archive/2013/01/09/2852357.html">UbuntuServer添加源列表</a>
+		</h1>
+		<div class="clear"></div>
+		<div class="postBody">
+			<div id="cnblogs_post_body"><p>要使用Ubuntu前，我们一般都要先做好工具！特别是对于安装这一块~~~~</p>
+<p>　　1、配置前，先做个配置文件的备份：<br />　　　　$sudo cp /etc/apt/sources.list /etc/apt/sources.list_bak<br /><br />　　2、然后就可以添加新的源了<br />　　　　$sudo vim /etc/apt/sources.list<br /><br />加入源地址【下面列出163的源，主要是速度与更新得快！！！推荐使用】</p>
+<p style="margin: 1em 0px 0.5em; padding: 0px;">deb http://mirrors.163.com/ubuntu/ maverick main restricted universe multiverse<br />deb http://mirrors.163.com/ubuntu/ maverick-security main restricted universe multiverse<br />deb http://mirrors.163.com/ubuntu/ maverick-updates main restricted universe multiverse<br />deb http://mirrors.163.com/ubuntu/ maverick-proposed main restricted universe multiverse<br />deb http://mirrors.163.com/ubuntu/ maverick-backports main restricted universe multiverse<br />deb-src http://mirrors.163.com/ubuntu/ maverick main restricted universe multiverse<br />deb-src http://mirrors.163.com/ubuntu/ maverick-security main restricted universe multiverse<br />deb-src http://mirrors.163.com/ubuntu/ maverick-updates main restricted universe multiverse<br />deb-src http://mirrors.163.com/ubuntu/ maverick-proposed main restricted universe multiverse<br />deb-src http://mirrors.163.com/ubuntu/maverick-backports main restricted universe multiverse</p>
+<p>　　PS：注释掉其他行(行首加上#)，也可不操作<br /><br />　　3、最后，更新你的软件列表<br />$&nbsp;sudo apt-get update &ndash; 列举本地更新</p>
+<p>再附几个常用命令：<br />$&nbsp;sudo apt-get upgrade &ndash; 安装可用更新<br />$&nbsp;sudo apt-get install 软件包名 &ndash; 安装指定软件包<br />$&nbsp;sudo apt-get remove 软件包名 &ndash; 删除指定软件包</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p></div><div id="MySignature"></div>
+<div class="clear"></div>
+
+</body>
+</html>

@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<title>移植代码到python3</title>
+</head>
+
+<body>
+
+<div id="article_content" class="article_content">
+<p>移植代码到Python3<br />
+
+原英文文档地址：<br />
+
+<a href="http://peadrop.com/blog/2009/04/05/porting-your-code-to-python-3/">http://peadrop.com/blog/2009/04/05/porting-your-code-to-python-3/</a>
+
+<br />
+
+<a href="http://peadrop.com/slides/mp5.pdf">http://peadrop.com/slides/mp5.pdf</a>
+
+<br />
+
+<br />
+
+<span style="font-size: large;"><strong>介绍：</strong>
+
+</span>
+
+<br />
+
+<span style="font-size: medium;">什么是Python3</span>
+
+<br />
+
+-不是完全重写<br />
+
+-不向前兼容的版本<br />
+
+-消除了旧有一些弊病<br />
+
+<span style="font-size: medium;">该报告的内容：</span>
+
+<br />
+
+-主要的改动<br />
+
+-怎样移植代码</p>
+<hr />
+<p><br />
+
+<strong><span style="font-size: large;">新变化：</span>
+
+</strong>
+
+<br />
+
+-print是一个函数<br />
+
+-关键字参数<br />
+
+-全部采用Unicode<br />
+
+-新I/O库<br />
+
+-重新组织标准库<br />
+
+-迭代器<br />
+
+-特殊方法<br />
+
+-语法变化</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-size: medium;">print是一个函数</span>
+
+<br />
+
+-不是一个大问题<br />
+
+-更加灵活</p>
+<p>可定制字符串分隔符</p>
+<p><textarea cols="40" rows="2" name="code" class="python:nogutter">&gt;&gt;&gt; print(&quot;value=&quot;, number, sep=&quot;&quot;)
+value=34</textarea>
+
+</p>
+<p>可以重载它
+</p>
+<p><textarea cols="40" rows="2" name="code" class="python:nogutter">import builtins
+builtins.print = my_custom_logger</textarea>
+
+</p>
+<p>-奇怪的&gt;&gt;sys.stderr语法没有了</p>
+<p>Python2</p>
+<p><textarea cols="40" rows="1" name="code" class="python:nogutter">print &gt;&gt;sys.stderr, &quot;system failure!&quot;</textarea>
+
+</p>
+<p>Python3</p>
+<p><textarea cols="40" rows="1" name="code" class="python:nogutter">print(&quot;system failure!&quot;, file=sys.stderr)</textarea>
+
+</p>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-size: medium;">关键字参数</span>
+
+</p>
+<p>-关键字参数必须明确写出来，不能以位置判定</p>
+<p>-变参数函数需要</p>
+<p><textarea cols="50" rows="2" name="code" class="python:nogutter">def print(*args, file=sys.stdout):
+      ...                        &lt;---------在Python3中是有效语法</textarea>
+
+</p>
+<p>-迫使用户表明意图</p>
+<p><textarea cols="40" rows="2" name="code" class="python:nogutter">my_list.sort(key=lambda x: x[1])
+sorted(my_list, reverse=True)</textarea>
+
+</p>
+<p>语法</p>
+<p><textarea cols="55" rows="2" name="code" class="python:nogutter">def sorted(iterable, *, reverse=False, key=None):
+      ...                &lt;-----------*号表明后面的参数是关键字参数</textarea>
+
+</p>
+<p>注意：错误信息非常奇怪</p>
+<p><textarea cols="40" rows="5" name="code" class="python:nogutter">&gt;&gt;&gt; sorted([1,2], True)
+Traceback (most recent call last):
+File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+TypeError: sorted() takes exactly 1 positional argument (2 given)</textarea>
+
+</p>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-size: medium;">Unicode</span>
+
+</p>
+<p>所有字符串默认为Unicode</p>
+<table style="width: 242px; height: 118px;" border="1">
+<tbody>
+<tr>
+<th>
+<p class="CellHeading">Python2</p>
+</th>
+
+            <th>
+<p class="CellHeading">Python3</p>
+</th>
+
+
+</tr>
+<tr>
+<td>
+<p class="CellBody">u&quot;hello world&quot;<br />
+
+ur&quot;/.write/(.*?/)&quot;<br />
+
+unicode(anything)</p>
+</td>
+<td>
+<p class="CellBody">&quot;hello world&quot;<br />
+
+r&quot;/.write/(.*?/)&quot;&nbsp;&nbsp;&nbsp;&nbsp; <br />
+
+str(anything)</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>新的bytes()数据类型</p>
+<p><textarea cols="50" rows="7" name="code" class="python:nogutter">b&quot;this is data&quot;
+&gt;&gt;&gt; bytes([1, 2, 3, 4])
+b'/x01/x02/x03/x04'
+&gt;&gt;&gt; bytes(&quot;h&eacute;h&eacute;&quot;, &quot;utf8&quot;)
+b'h/xc3/xa9h/xc3/xa9'
+&gt;&gt;&gt; b&quot;hello&quot; + &quot;world&quot;
+TypeError: can't concat bytes to str</textarea>
+
+</p>
+<p>更多新奇的操作</p>
+<p><textarea cols="40" rows="5" name="code" class="python:nogutter">b = bytearray(20)
+file.readinto(b)   &lt;----只有20字节读入缓冲
+b.reverse()
+b += b&quot;hello world&quot;
+b[1] = 0</textarea>
+
+</p>
+<p>-数据与文本间的区别并不总是很清楚</p>
+<p>-一些系统API也接受bytes</p>
+<p><textarea cols="40" rows="4" name="code" class="python:nogutter">&gt;&gt;&gt; os.listdir(os.getcwd())
+['eggs', 'monkey', 'spam']
+&gt;&gt;&gt; os.listdir(os.getcwdb())
+[b'eggs', b'foo/x8f', b'monkey', b'spam']</textarea>
+
+</p>
+<p>-repr()不再避开非ASCII字符，当然不可打印字符和控制字符除外</p>
+<p><textarea cols="50" rows="8" name="code" class="python:nogutter">Python 2
+&gt;&gt;&gt; &quot;all&ocirc;!/n&quot;    &lt;-----隐式调用repr()
+'all/xc3/xb4!/n'
+Python 3
+&gt;&gt;&gt; &quot;all&ocirc;!/n&quot;    &lt;-----隐式调用repr()
+'all&ocirc;!/n'
+&gt;&gt;&gt; ascii(&quot;all&ocirc;!/n&quot;)    &lt;-----旧行为仍然有效
+&quot;'all//xf4!//n'&quot;</textarea>
+
+</p>
+<p>-支持非ASCII字符做标示符</p>
+<p><textarea cols="50" rows="2" name="code" class="python:nogutter">def hol&agrave;(&alpha;, &beta;):
+return &alpha; + &beta; * 360</textarea>
+
+ </p>
+<p>-但是不要使用！</p>
+<p>-小心像拉丁文的字符</p>
+<p><textarea cols="50" rows="2" name="code" class="python:nogutter">&gt;&gt;&gt; ascii(&quot;ѕресіаl&quot;)
+&quot;'//u0455//u0440//u0435//u0441//u0456//u0430l'&quot;</textarea>
+
+</p>
+<p>
+<hr />
+</p>
+<p><span style="font-size: medium;">新I/O库</span>
+
+<br />
+
+-基于Unicode设计<br />
+
+-目前正在用C改写以提高性能<br />
+
+-好消息：你不必考虑它</p>
+<p><textarea cols="50" rows="3" name="code" class="python:nogutter">with open(&quot;readme.txt&quot;, &quot;w&quot;) as f:
+f.write(&quot;hello&quot;)
+open(&quot;encoded.txt&quot;, &quot;r&quot;, encoding=&quot;latin-1&quot;)</textarea>
+
+</p>
+<p>-3层：raw, buffered和text.</p>
+<p>-重用代码的好方法</p>
+<p><textarea cols="50" rows="7" name="code" class="python:nogutter">class StringIO(io.TextIOWrapper):
+    def __init__(self, initial_value=&quot;&quot;):
+        super().__init__(io.BytesIO(), encoding=&quot;utf-16&quot;)
+        self.write(initial_value)
+        self.seek(0)
+    def getvalue(self):
+        return self.buffer.getvalue().decode(&quot;utf-16&quot;)</textarea>
+<p><span style="font-size: medium;">标准库的重组织</span>
+
+<br />
+
+-移除了&quot;愚蠢的老东西&quot;<br />
+
+-模块重命名，遵循PEP-8(Python Enhancement Proposals，Style Guide for Python Code)<br />
+
+-工具2to3可以帮你完成大部分移植工作</p>
+<p>&nbsp;</p>
+<p>Python2中糟糕的名字，违反了PEP 8</p>
+<table style="width: 326px; height: 198px;" border="1">
+<tbody>
+<tr>
+<th>
+<p class="CellHeading">Python2</p>
+</th>
+
+            <th>
+<p class="CellHeading">Python3</p>
+</th>
+
+
+</tr>
+<tr>
+<td>
+<p class="CellBody">import _winreg<br />
+
+import ConfigParser<br />
+
+import copy_reg<br />
+
+import Queue<br />
+
+import SocketServer<br />
+
+import __builtin__<br />
+
+import repr<br />
+
+import test.test_support</p>
+</td>
+<td>
+<p class="CellBody">import winreg<br />
+
+import configparser<br />
+
+import copyreg<br />
+
+import queue<br />
+
+import socketserver<br />
+
+import builtins<br />
+
+import reprlib<br />
+
+import test.support</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>Python3中自动使用优化的实现</p>
+<table style="width: 363px; height: 203px;" border="1">
+<tbody>
+<tr>
+<th>
+<p class="CellHeading">Python2</p>
+</th>
+
+            <th>
+<p class="CellHeading">Python3</p>
+</th>
+
+
+</tr>
+<tr>
+<td>
+<p class="CellBody">try:<br />
+
+&nbsp;&nbsp;&nbsp; import cStringIO as StringIO<br />
+
+except ImportError:<br />
+
+&nbsp;&nbsp;&nbsp; import StringIO</p>
+<p class="CellBody"><br />
+
+try:<br />
+
+&nbsp;&nbsp;&nbsp; import cPickle as pickle<br />
+
+except ImportError:<br />
+
+&nbsp;&nbsp;&nbsp; import pickle</p>
+</td>
+<td>
+<p class="CellBody">import io</p>
+<p class="CellBody">&nbsp;</p>
+<p class="CellBody">&nbsp;</p>
+<p class="CellBody">&nbsp;</p>
+<p class="CellBody">&nbsp;</p>
+<p class="CellBody">import pickle &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</p>
+<p class="CellBody">&nbsp;</p>
+</td>
+</tr>
+</tbody>
+</table>
+<table style="width: 424px; height: 288px;" border="1">
+<tbody>
+<tr>
+<th>
+<p class="CellHeading">Python2</p>
+</th>
+
+            <th>
+<p class="CellHeading">Python3</p>
+</th>
+
+
+</tr>
+<tr>
+<td>
+<p class="CellBody">import HTMLParser<br />
+
+import htmlentitydefs</p>
+<p class="CellBody"><br />
+
+import xmlrpclib<br />
+
+import DocXMLRPCServer<br />
+
+import SimpleXMLRPCServer</p>
+<p class="CellBody"><br />
+
+import dbhash<br />
+
+import dbm<br />
+
+import gdbm<br />
+
+import anydbm<br />
+
+import whichdb</p>
+</td>
+<td>
+<p class="CellBody">import html.parser<br />
+
+import html.entities</p>
+<p class="CellBody"><br />
+
+import xmlrpc.client<br />
+
+import xmlrpc.server</p>
+<p class="CellBody">&nbsp;</p>
+<p class="CellBody"><br />
+
+import dbm.bsd<br />
+
+import dbm.ndbm<br />
+
+import dbm.gnu<br />
+
+import dbm</p>
+<p class="CellBody">&nbsp;</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>-移除了一些模块：compiler,popen2 htmllib, sgmllib, urllib,md5等等<br />
+
+-工具2to3不处理这些<br />
+
+-重写你的代码，避免使用弃用的模块<br />
+
+-从PEP 3108查看所有的替换<br />
+
+<br />
+
+附注：pickle数据需要重新产生(即两个版本产生的格式不一样)</p>
+<p>&nbsp;</p>
+<p><textarea cols="50" rows="12" name="code" class="python:nogutter">$ python2.6
+&gt;&gt;&gt; import pickle
+&gt;&gt;&gt; pickle.dump(map, open(&quot;test.pickle&quot;, &quot;wb&quot;))
+&gt;&gt;&gt; pickle.load(open(&quot;test.pickle&quot;, &quot;rb&quot;))
+&lt;builtin
+function map&gt;
+$ python3.0
+&gt;&gt;&gt; import pickle
+&gt;&gt;&gt; pickle.load(open(&quot;test.pickle&quot;, &quot;rb&quot;))
+Traceback (most recent call last):
+   ...
+ImportError: No module named __builtin__</textarea>
+
+</p>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-size: medium;">iterators和views</span>
+
+<br />
+
+-许多API不再返回列表，而是返回一个iterator或view<br />
+
+-例如dict.keys()，.values()和.items()返回views。</p>
+<p><textarea cols="50" rows="2" name="code" class="python:nogutter">&gt;&gt;&gt; {1: 0}.keys()
+&lt;dict_keys object at 0x7ffdf8d53d00&gt;</textarea>
+
+ <br />
+
+-view是一个类似集合的对象，可以进行标准的集合操作，如加和减<br />
+
+<textarea cols="50" rows="2" name="code" class="python:nogutter">for node in (graph.keys() current_node):
+   ...</textarea>
+
+ <br />
+
+map()，filter()，zip()返回iterators。</p>
+<table style="width: 539px; height: 251px;" border="1">
+<tbody>
+<tr>
+<th>
+<p class="CellHeading">Python2</p>
+</th>
+
+            <th>
+<p class="CellHeading">Python3</p>
+</th>
+
+
+</tr>
+<tr>
+<td>
+<p class="CellBody">a = map(lambda x: x[1], items)</p>
+<p class="CellBody"><br />
+
+for name in map(str.lower, names):<br />
+
+&nbsp;&nbsp;&nbsp;&nbsp; ...</p>
+<p class="CellBody"><br />
+
+a = filter(lambda n: n%2==0, nums)</p>
+<p class="CellBody"><br />
+
+for key in filter(str.isdigit, keys):<br />
+
+&nbsp;&nbsp;&nbsp;&nbsp; ...</p>
+<p class="CellBody"><br />
+
+dict(zip(sins, persons))</p>
+</td>
+<td>
+<p class="CellBody">a = [x[1] for x in items]</p>
+<p class="CellBody"><br />
+
+no change</p>
+<p class="CellBody">&nbsp;</p>
+<p class="CellBody"><br />
+
+a = [n for n in nums if n%2==0]</p>
+<p class="CellBody">&nbsp;</p>
+<p class="CellBody">no change</p>
+<p class="CellBody">&nbsp;</p>
+<p class="CellBody">&nbsp;</p>
+<p class="CellBody">no change</p>
+<p class="CellBody">&nbsp;</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>-xrange()是新的range().<br />
+
+-大部分代码不需要修改<br />
+
+<br />
+
+<span style="font-size: medium;">特殊方法：slicing</span>
+
+<br />
+
+-__getslice__和friends不再支持<br />
+
+-使用__getitem__来替代</p>
+<p><textarea cols="50" rows="11" name="code" class="python:nogutter">class Array:
+    def __getitem__(self, x):
+        if isinstance(x, slice):
+            start, stop, step = x.indices(len(self))
+            ...
+        else:
+            try:
+                index = x.__index__()
+        except AttributeError:
+            raise TypeError(&quot;indices must be integers&quot;)
+        ...</textarea>
+
+</p>
+<p><span style="font-size: medium;">特殊方法：丰富的比较</span>
+
+</p>
+<p>取消了3路比较</p>
+<p><strong>Python2</strong>
+
+</p>
+<p><textarea cols="50" rows="10" name="code" class="python:nogutter">class Number:
+    ...
+    def __cmp__(self, other):
+        if self.value == other.value:
+            return 0
+        elif self.value &lt; other.value:
+            return 1
+        else:
+            return 1
+    ...</textarea>
+
+</p>
+<p><strong>Python3</strong>
+
+</p>
+<p><textarea cols="50" rows="13" name="code" class="python:nogutter">class Number:
+    ...
+    def __eq__(self, other):
+        return self.value == other.value
+    def __lt__(self, other):
+        return self.value &lt; other.value
+    def __gt__(self, other):
+        return self.value &gt; other.value
+    def __le__(self, other):
+        return self.value &lt;= other.value
+    def __ge__(self, other):
+        return self.value &gt;= other.value
+    ...</textarea>
+
+</p>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-size: medium;">语法改变：异常<br />
+
+</span>
+
+</p>
+<p>&nbsp;</p>
+<table style="width: 447px; height: 152px;" border="1">
+<tbody>
+<tr>
+<th>
+<p class="CellHeading">Python2</p>
+</th>
+
+            <th>
+<p class="CellHeading">Python3</p>
+</th>
+
+
+</tr>
+<tr>
+<td>
+<p class="CellBody">try:<br />
+
+&nbsp;&nbsp;&nbsp; with open(fn, 'r') as f:<br />
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  lines = list(f)<br />
+
+except (IOError, OSError), err: <br />
+
+&nbsp;&nbsp;&nbsp; log_error(err)</p>
+</td>
+<td>
+<p class="CellBody">try:<br />
+
+&nbsp;&nbsp;&nbsp; with open(fn, 'r') as f:<br />
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  lines = list(f)<br />
+
+except (IOError, OSError) as err: <br />
+
+&nbsp;&nbsp;&nbsp; log_error(err)</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p><span style="font-size: medium;">语法改变：相关引入</span>
+
+</p>
+<p>json/<br />
+
+&nbsp;|-&nbsp; encoder.py<br />
+
+&nbsp;|-&nbsp; decoder.py<br />
+
+&nbsp;|-&nbsp; __init__.py</p>
+<p><br />
+
+在文件__init__.py中:</p>
+<p><textarea cols="50" rows="2" name="code" class="python:nogutter">from .encoder import JSONEncoder
+from .decoder import JSONDecoder</textarea>
+
+</p>
+<p>&nbsp;</p>
+<p><span style="font-size: medium;">语法改变：set和dict理解<br />
+
+</span>
+
+</p>
+<p>-新集合语法</p>
+<p><textarea cols="50" rows="2" name="code" class="python:nogutter">{1, 3, 5}
+set()   &lt;-----没有空set语法</textarea>
+
+ <br />
+
+<br />
+
+-集合理解</p>
+<p><textarea cols="50" rows="1" name="code" class="python:nogutter">{x for x in iterable}</textarea>
+
+</p>
+<p>
+-辞典理解</p>
+<p><textarea cols="50" rows="1" name="code" class="python:nogutter">{k : v for k, v in iterable}</textarea>
+
+</p>
+<p>&nbsp;</p>
+<p><span style="font-size: medium;">语法改变：其他细微差别</span>
+
+</p>
+<p>-扩展可迭代拆包</p>
+<p><textarea cols="50" rows="1" name="code" class="python:nogutter">a, b, *c = (1, 2, 3, 4, 5)</textarea>
+
+</p>
+<p>-nonlocal声明用于访问外部变量</p>
+<p>-函数注解</p>
+<p><textarea cols="50" rows="2" name="code" class="python:nogutter">def readinto(b: bytearray) -&gt; int:
+&nbsp;&nbsp;&nbsp; ...</textarea>
+
+</p>
+<p>-介绍<br />
+
+-迁移策略<br />
+
+-运行时警告<br />
+
+-向前特性<br />
+
+-2to3源码转换器<br />
+
+<br />
+
+<span style="font-size: medium;">介绍</span>
+
+<br />
+
+-不止一种方法来完成<br />
+
+-移植C扩展是另一个怪物<br />
+
+<br />
+
+<span style="font-size: medium;">迁移策略</span>
+
+<br />
+
+1.改进你的测试套件<br />
+
+2.移植代码到Python2.6<br />
+
+3.开放Python3的警告<br />
+
+4.修复所有的警告<br />
+
+5.改造你的代码<br />
+
+6.运行2to3<br />
+
+<br />
+
+代码改造<br />
+
+-缩小语义差距<br />
+
+-减少2to3的工作量<br />
+
+-例子：<br />
+
+&nbsp;&nbsp;&nbsp; -使用dict.iterkeys(), xrange()等<br />
+
+&nbsp;&nbsp;&nbsp; -避免str和unicode的隐式转换<br />
+
+&nbsp;&nbsp;&nbsp; -使用__getitem__替换__getslice__<br />
+
+<br />
+
+运行时警告<br />
+
+python2.6 -3 scriptname.py<br />
+
+-警告Python3中移除了的特性<br />
+
+-警告2to3不能自动处理的改变<br />
+
+<br />
+
+<span style="font-size: medium;">向前特性</span>
+
+<br />
+
+Python3的许多特性在Python2.6中有效<br />
+
+-新的I/O库<br />
+
+-Unicode和bytes<br />
+
+<textarea cols="50" rows="1" name="code" class="python:nogutter">from __future__ import unicode_literals</textarea>
+
+ <br />
+
+-未来的内嵌函数<br />
+
+<textarea cols="50" rows="1" name="code" class="python:nogutter">from future_builtins import map, zip, hex</textarea>
+
+<br />
+
+-捕获和抛出异常的新语法<br />
+
+-新ast模块，高级字符串格式，丰富的比较等<br />
+
+<br />
+
+<span style="font-size: medium;">2to3源码转换器</span>
+
+<br />
+
+-转换文件或目录<br />
+
+-产生一个相异格式的补丁<br />
+
+2to3 project/ &gt; python3.patch<br />
+
+-也可以修复doctests<br />
+
+2to3 -d tests.py<br />
+
+-修复器可以单独运行<br />
+
+<br />
+
+局限性<br />
+
+-只能处理语法转换&mdash;&mdash;也就是说没有类型推断<br />
+
+-不能修复下面这些：<br />
+
+<br />
+
+<textarea cols="50" rows="3" name="code" class="python:nogutter">attr = &quot;has_key&quot;
+if getattr(d, attr)(key):
+&nbsp;&nbsp;&nbsp; ...</textarea>
+
+<br />
+
+<textarea cols="50" rows="3" name="code" class="python:nogutter">m = d.has_key
+if m(key):
+&nbsp;&nbsp;&nbsp; ...</textarea>
+
+<br />
+
+
+<textarea cols="50" rows="1" name="code" class="python:nogutter">eval(&quot;d.has_key(key)&quot;)</textarea>
+
+<br />
+
+<br />
+
+将近的改变<br />
+
+-%型的格式可能将弃用<br />
+
+-性能改善<br />
+
+-新importlib模块<br />
+
+<br />
+
+<span style="font-size: medium;">总结</span>
+
+<br />
+
+-Python3有许多新特性<br />
+
+-有许多工具辅助转换<br />
+
+-发送bug报告到http://bugs.python.org/<br />
+
+-订阅pythonporting邮件列表以获取更多帮助</p>
+
+</div>
+
+
+</body>
+</html>
